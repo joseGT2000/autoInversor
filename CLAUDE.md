@@ -7,8 +7,14 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Fase 2 – Tracker implementado** (2026-10-29): descubrimiento + escaneo incremental + scoring + feedback. 14 tests OK. 2 ejecuciones reales (~3k créditos c/u).
 - Pools trending = casi solo bots (17 `wash`, 12 `bot`). **Birdeye `/trader/gainers-losers` ordenado por `realized_pnl`** funciona (ordenar por `PnL` da basura no realizada).
 - Ranking 2026-10-29: **1 elegible** (`9R3m89…`, 960 SOL realizados/30d, win-rate 81 %, score 0,51). 5 wallets Birdeye muy buenas (win-rate ~100 %) caen por `historial_corto` con historial idéntico de 12,2 días → probable mismo operador; entrarán en ~2 días. Pendiente: detectar wallets vinculadas para no concentrar.
-- **Fase 3 – Copier implementado** (2026-10-29): 16 tests OK; probado con cotizaciones reales (compra+venta parcial en transacción revertida). Cartera real aún en 200 € sin operaciones.
-- Siguiente: Fase 4 auditor (diario) + detectar wallets vinculadas.
+- **Fase 3 – Copier implementado** (2026-10-29): probado con cotizaciones reales (compra+venta parcial en transacción revertida).
+- **Fase 4 – Auditor implementado** (2026-10-29): 22 tests OK. Informe diario en `reports/audit-YYYY-MM-DD.md` (Actions lo commitea → hacer `git pull` antes de trabajar en local) + resumen de la ejecución + tabla `audit_reports`.
+- **MODO PRUEBA**: filtros relajados en `config.yaml` (valores estrictos en comentarios) → 6 wallets elegibles. Top 3: `3me2rp…`, `Cz126Z…`, `E1qzvE…` (5 de las 6 con historial idéntico de 12,3 días pero solapan ≤4 tokens → no se filtran).
+- Cartera: 200 € sin operaciones aún. Siguiente: dejar correr la simulación, revisar informes; mejoras: webhooks Helius (tiempo real), filtro de liquidez en copier si muchos `no_route`.
+
+## Auditor: cómo funciona
+- Unidad = ronda (wallet × token): coste, ventas y lo abierto a precio de Jupiter (sin precio = 0). Desglose por wallet, regla de entrada del allocator y riesgo del token (alto/medio/bajo según liquidez, authorities, top10).
+- Equity diario en `audit_reports` → drawdown. Propuestas por reglas con muestra mínima de 5 rondas (first_mover perdedor, riesgo alto, `no_route` > 20 %, wallet con ROI < -30 %, retraso > 15 min).
 
 ## Copier: cómo funciona
 - Vigila top N (último `wallet_scores`) + wallets con posiciones abiertas (de estas solo copia ventas).
@@ -31,7 +37,7 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Nunca loguear URLs de Helius** (llevan la key y los logs de Actions son públicos): logger `httpx` en WARNING y errores sin URL.
 
 ## Estructura y comandos
-- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`, `copier.py`; `auditor.py` aún stub.
+- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`, `copier.py`, `auditor.py`. Informes en `reports/`.
 - `db/schema.sql` (Postgres idempotente), `tests/`, `.github/workflows/copytrader.yml` (un workflow, 3 crons + `workflow_dispatch`).
 - `.\.venv\Scripts\python -m pytest -q` · `.\.venv\Scripts\python -m copytrader {tracker|copier|auditor|init-db}`
 - En PowerShell nuevo, si `python`/`git` no se encuentran: reiniciar la terminal (PATH recién instalado).

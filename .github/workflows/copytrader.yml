@@ -11,6 +11,9 @@ on:
         type: choice
         options: [tracker, copier, auditor, init-db]
 
+permissions:
+  contents: write   # el auditor sube su informe a reports/
+
 concurrency:
   group: copytrader-${{ github.event.schedule || inputs.command }}
   cancel-in-progress: false
@@ -40,3 +43,12 @@ jobs:
             *)              echo "name=${{ inputs.command }}" >> "$GITHUB_OUTPUT" ;;
           esac
       - run: python -m copytrader ${{ steps.cmd.outputs.name }}
+      - name: Publicar informe de auditoría
+        if: steps.cmd.outputs.name == 'auditor'
+        run: |
+          cat reports/audit-*.md >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "copytrader-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/
+          git commit -m "Auditoría $(date -u +%F)" || exit 0
+          git pull --rebase -q && git push -q

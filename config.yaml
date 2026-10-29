@@ -1,4 +1,5 @@
 # Parámetros ajustables. El auditor propone cambios aquí; los secretos van en .env.
+# MODO PRUEBA (2026-10-29): filtros relajados para generar datos rápido. Valores estrictos en comentarios.
 portfolio:
   initial_capital: 200
   currency: EUR
@@ -7,12 +8,12 @@ portfolio:
 allocator:
   base_pct_by_rank: {1: 0.30, 2: 0.25, 3: 0.20}
   first_mover_pct: 0.60       # wallet entra en un token que nadie más del top tiene (null = desactivado)
-  consensus_add_pct: 0.10     # otra wallet del top entra en un token que ya tenemos
+  consensus_add_pct: 0.10     # otra wallet del top (o la misma, si copy_same_wallet_adds) entra en un token que ya tenemos
   max_pct_per_trade: 0.60
   max_pct_per_token: 0.70
-  min_cash_reserve_pct: 0.10
-  min_trade_value: 2.0
-  max_fee_pct: 0.02
+  min_cash_reserve_pct: 0.05  # estricto: 0.10
+  min_trade_value: 1.0        # estricto: 2.0
+  max_fee_pct: 0.05           # estricto: 0.02
 
 simulation:
   slippage_bps: 100           # sobre la cotización real de Jupiter se descuenta la mitad
@@ -20,17 +21,17 @@ simulation:
   execution_delay_s: 5
 
 copier:
-  max_signal_age_min: 60      # no copiar swaps más viejos
-  copy_same_wallet_adds: false
+  max_signal_age_min: 120     # estricto: 60. No copiar swaps más viejos (cron de Actions se retrasa)
+  copy_same_wallet_adds: true # estricto: false
   signatures_per_wallet: 100
   helius_credit_budget: 3000  # por ejecución (cada 15 min)
 
 tracker:
   lookback_days: 30
-  min_trades_30d: 20
-  max_trades_per_day: 200     # más swaps/día = bot
-  min_wallet_age_days: 14
-  min_closed_positions: 5
+  min_trades_30d: 8           # estricto: 20
+  max_trades_per_day: 200     # más swaps/día = bot (no se relaja: los bots no son copiables)
+  min_wallet_age_days: 3      # estricto: 14
+  min_closed_positions: 3     # estricto: 5
   feedback_weight: 0.5        # peso del rendimiento real de copiarla
   min_copy_closed: 3
   score_weights: {roi: 0.35, win_rate: 0.30, profitable_days: 0.20, sample_size: 0.15, drawdown: 0.20}
