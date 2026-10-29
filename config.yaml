@@ -1,0 +1,26 @@
+# Parámetros ajustables. El auditor propone cambios aquí; los secretos van en .env.
+portfolio:
+  initial_capital: 200
+  currency: EUR
+  top_n: 3
+
+allocator:
+  base_pct_by_rank: {1: 0.30, 2: 0.25, 3: 0.20}
+  first_mover_pct: 0.60       # wallet entra en un token que nadie más del top tiene (null = desactivado)
+  consensus_add_pct: 0.10     # otra wallet del top entra en un token que ya tenemos
+  max_pct_per_trade: 0.60
+  max_pct_per_token: 0.70
+  min_cash_reserve_pct: 0.10
+  min_trade_value: 2.0
+  max_fee_pct: 0.02
+
+simulation:
+  slippage_bps: 100
+  priority_fee_sol: 0.0001
+  execution_delay_s: 5
+
+tracker:
+  min_trades_30d: 20
+  max_trades_per_day: 200
+  min_wallet_age_days: 14
+  feedback_weight: 0.5
