@@ -15,7 +15,8 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Dashboard** publicado en https://josegt2000.github.io/autoInversor/ (`site/`, workflow `pages.yml` tras cada ejecución de copytrader).
 - **Primera copia en tiempo real** (2026-10-29 15:14 UTC): detectada 3 s después de la compra, pero `failed:no_route` → Jupiter aún no había indexado el token (creado ese mismo segundo).
 - **Snipers excluidos**: top 1 (`E1qzvE…`) y top 2 (`8bHCGz…`) compraban 12/12 veces en el mismo segundo de creación del token → exclusión permanente `sniper` (> `sniper_max_ratio` de sus últimas 20 compras a ≤ `sniper_window_s` de `token_risk.created_at`, fecha de Jupiter tokens API en lote). Tras excluirlos: **0 elegibles** → falta encontrar wallets no-sniper (Birdeye top PnL está dominado por snipers).
-- Primera posición real: 157 € en FOMO (`wFzq9G…`) copiando a `E1qzvE…` antes de excluirla; el webhook la sigue vigilando hasta copiar su venta (vigiladas = top ∪ wallets con posiciones).
+- Primera ronda real (FOMO `wFzq9G…`, copiando al sniper `E1qzvE…`): compras 157 € (15:29–15:31) → venta espejo 100 % a las 15:35 por 34,86 € = **−122 € (−78 %)**. El token cayó luego −99,5 %: pump & dump; confirma que copiar snipers es perder. Cartera ≈ 78 €.
+- Tracker tras filtro: 0 elegibles (41 bots, 17 wash, 2 snipers). Birdeye top PnL = casi todo bots/snipers → hace falta otra fuente (p. ej. `manual_wallets` desde rankings de traders humanos tipo Kolscan/GMGN).
 - **Crons de GitHub no se disparaban** (0 ejecuciones programadas en 3,5 h). Movidos a minutos poco saturados (tracker 06:13, copier :07/:37, auditor 23:47 UTC). Si el 2026-10-30 siguen sin ejecutarse → disparador externo con `pg_cron` + `pg_net` de Supabase llamando a `workflow_dispatch` (requiere PAT con permiso Actions).
 
 ## Dashboard
