@@ -34,6 +34,8 @@ tracker:
   min_wallet_age_days: 3      # estricto: 14
   min_closed_positions: 3     # estricto: 5
   max_days_inactive: 2        # sin swaps en más días -> fuera del ranking (no copiaríamos nada)
+  sniper_window_s: 10         # compra a <= 10 s de crearse el token = compra de sniper
+  sniper_max_ratio: 0.5       # > 50 % de sus últimas compras así -> excluida para siempre (no copiable)
   feedback_weight: 0.5        # peso del rendimiento real de copiarla
   min_copy_closed: 3
   score_weights: {roi: 0.35, win_rate: 0.30, profitable_days: 0.20, sample_size: 0.15, drawdown: 0.20}

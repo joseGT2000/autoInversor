@@ -15,7 +15,7 @@ from copytrader import market, webhook
 from copytrader.config import Config
 from copytrader.db import connect
 from copytrader.scoring import (PERMANENT_EXCLUSIONS, compute_metrics, copy_score, exclusion_reason,
-                                final_score, onchain_score)
+                                final_score, launch_buy_ratio, onchain_score)
 from copytrader.solana import QUOTE_MINTS, CreditBudgetExceeded, SolanaRPC, Swap, parse_swap
 
 log = logging.getLogger(__name__)
@@ -86,14 +86,15 @@ def save_token_risk(conn, token: dict) -> None:
     audit = token.get("audit") or {}
     conn.execute(
         """insert into token_risk (token_mint, liquidity_usd, mint_authority, freeze_authority,
-                                   top10_holders_pct, raw)
-           values (%s, %s, %s, %s, %s, %s)
+                                   top10_holders_pct, created_at, raw)
+           values (%s, %s, %s, %s, %s, %s, %s)
            on conflict (token_mint) do update set checked_at = now(),
                liquidity_usd = excluded.liquidity_usd, mint_authority = excluded.mint_authority,
                freeze_authority = excluded.freeze_authority,
-               top10_holders_pct = excluded.top10_holders_pct, raw = excluded.raw""",
+               top10_holders_pct = excluded.top10_holders_pct, created_at = excluded.created_at,
+               raw = excluded.raw""",
         (token["id"], token.get("liquidity"), token.get("mintAuthority") is not None,
-         not audit.get("freezeAuthorityDisabled", False), audit.get("topHoldersPercentage"),
+         not audit.get("freezeAuthorityDisabled", False), audit.get("topHoldersPercentage"), token.get("createdAt"),
          json.dumps({k: token.get(k) for k in ("symbol", "organicScore", "holderCount", "mcap", "audit")})),
     )
 
@@ -176,13 +177,26 @@ def score_all(conn, cfg: Config) -> list[dict]:
                       for r in conn.execute("select address, first_activity from wallets")}
     copy_rois = copy_performance(conn, since, tc.min_copy_closed)
 
-    rows = []
+    evaluated = {}
     for address, swaps in trades.items():
         m = compute_metrics(swaps)
         if first_activity.get(address):
             m.history_days = max(m.history_days,
                                  (datetime.now(timezone.utc) - first_activity[address]).total_seconds() / 86400)
-        reason = exclusion_reason(m, tc)
+        evaluated[address] = (m, exclusion_reason(m, tc))
+
+    # Snipers: solo se mira en las que pasan el resto de filtros (ahorra llamadas a Jupiter)
+    passing = [a for a, (_, reason) in evaluated.items() if reason is None]
+    created = token_created_at(conn, {s.token_mint for a in passing for s in trades[a] if s.side == "buy"})
+    for address in passing:
+        m, _ = evaluated[address]
+        ratio = launch_buy_ratio(trades[address], created, tc.sniper_window_s)
+        m.launch_buy_ratio = ratio
+        if ratio is not None and ratio > tc.sniper_max_ratio:
+            evaluated[address] = (m, "sniper")
+
+    rows = []
+    for address, (m, reason) in evaluated.items():
         if reason in PERMANENT_EXCLUSIONS:
             conn.execute("update wallets set excluded = true, exclude_reason = %s where address = %s",
                          (reason, address))
@@ -208,6 +222,22 @@ def score_all(conn, cfg: Config) -> list[dict]:
         )
     log.info("puntuadas %d wallets, %d elegibles", len(rows), len(eligible))
     return eligible
+
+
+def token_created_at(conn, mints: set[str]) -> dict[str, datetime]:
+    """Fecha de creación de cada token; las que falten en token_risk se piden a Jupiter y se guardan."""
+    if not mints:
+        return {}
+    known = {r["token_mint"]: r["created_at"] for r in conn.execute(
+        "select token_mint, created_at from token_risk where token_mint = any(%s) and created_at is not null",
+        (list(mints),))}
+    missing = mints - known.keys()
+    if missing:
+        for token in market.token_infos(list(missing)).values():
+            save_token_risk(conn, token)
+            if token.get("createdAt"):
+                known[token["id"]] = datetime.fromisoformat(token["createdAt"].replace("Z", "+00:00"))
+    return known
 
 
 def copy_performance(conn, since: datetime, min_closed: int) -> dict[str, float]:

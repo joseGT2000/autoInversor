@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 
 from copytrader.config import TrackerConfig
-from copytrader.scoring import compute_metrics, copy_score, exclusion_reason, final_score, onchain_score
+from copytrader.scoring import (compute_metrics, copy_score, exclusion_reason, final_score, launch_buy_ratio,
+                                onchain_score)
 from copytrader.solana import Swap
 
 T0 = datetime(2026, 10, 1, tzinfo=timezone.utc)
@@ -54,6 +55,17 @@ def test_inactive_wallet_leaves_ranking():
     assert exclusion_reason(compute_metrics(swaps, now=T0 + timedelta(days=4)), cfg) is None
     m = compute_metrics(swaps, now=T0 + timedelta(days=6))
     assert round(m.days_since_last_swap) == 3 and exclusion_reason(m, cfg) == "inactiva"
+
+
+def test_launch_buy_ratio_detects_snipers():
+    created = {"A": T0, "B": T0, "C": T0 + timedelta(days=1)}
+    swaps = [swap(1, 0, "buy", "A", 10, 1.0),           # minuto 1 tras crear A -> no sniper (60 s)
+             Swap("s2", "W", T0 + timedelta(seconds=2), "buy", "B", 10, 1.0),   # 2 s -> sniper
+             Swap("s3", "W", T0 + timedelta(days=1, seconds=1), "buy", "C", 10, 1.0),  # 1 s -> sniper
+             swap(4, 2, "sell", "B", 10, 2.0),
+             swap(5, 0, "buy", "SIN_FECHA", 10, 1.0)]
+    assert launch_buy_ratio(swaps, created, window_s=10) == 2 / 3
+    assert launch_buy_ratio(swaps, {}, window_s=10) is None
 
 
 def test_feedback_blend():

@@ -48,6 +48,7 @@ create table if not exists token_risk (
     rugcheck_score numeric,
     raw            jsonb
 );
+alter table token_risk add column if not exists created_at timestamptz;  -- creación del token (detectar snipers)
 
 -- Nuestras operaciones simuladas
 create table if not exists sim_trades (

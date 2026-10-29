@@ -13,6 +13,9 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Copier en tiempo real EN PRODUCCIÓN** (2026-10-29): Edge Function `copier-webhook` desplegada (401 sin secreto, BD OK) y webhook Helius `552ea415…` activo vigilando el top 3. Aún sin eventos recibidos.
 - Filtro `inactiva` (último swap > `max_days_inactive`=2 días, no permanente) → el top deja de incluir wallets paradas.
 - **Dashboard** publicado en https://josegt2000.github.io/autoInversor/ (`site/`, workflow `pages.yml` tras cada ejecución de copytrader).
+- **Primera copia en tiempo real** (2026-10-29 15:14 UTC): detectada 3 s después de la compra, pero `failed:no_route` → Jupiter aún no había indexado el token (creado ese mismo segundo).
+- **Snipers excluidos**: top 1 (`E1qzvE…`) y top 2 (`8bHCGz…`) compraban 12/12 veces en el mismo segundo de creación del token → exclusión permanente `sniper` (> `sniper_max_ratio` de sus últimas 20 compras a ≤ `sniper_window_s` de `token_risk.created_at`, fecha de Jupiter tokens API en lote). Tras excluirlos: **0 elegibles** → falta encontrar wallets no-sniper (Birdeye top PnL está dominado por snipers).
+- Primera posición real: 157 € en FOMO (`wFzq9G…`) copiando a `E1qzvE…` antes de excluirla; el webhook la sigue vigilando hasta copiar su venta (vigiladas = top ∪ wallets con posiciones).
 - **Crons de GitHub no se disparaban** (0 ejecuciones programadas en 3,5 h). Movidos a minutos poco saturados (tracker 06:13, copier :07/:37, auditor 23:47 UTC). Si el 2026-10-30 siguen sin ejecutarse → disparador externo con `pg_cron` + `pg_net` de Supabase llamando a `workflow_dispatch` (requiere PAT con permiso Actions).
 
 ## Dashboard

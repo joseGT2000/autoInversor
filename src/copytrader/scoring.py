@@ -27,6 +27,7 @@ class WalletMetrics:
     max_drawdown_sol: float = 0.0
     avg_buy_sol: float = 0.0
     days_since_last_swap: float = 0.0
+    launch_buy_ratio: float | None = None  # % de compras en los primeros segundos del token (sniper)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -111,7 +112,21 @@ def exclusion_reason(m: WalletMetrics, cfg: TrackerConfig) -> str | None:
     return None
 
 
-PERMANENT_EXCLUSIONS = {"bot", "wash"}
+PERMANENT_EXCLUSIONS = {"bot", "wash", "sniper"}
+
+
+def launch_buy_ratio(swaps: list[Swap], created: dict[str, datetime], window_s: float,
+                     last_n: int = 20) -> float | None:
+    """Fracción de las últimas compras hechas a <= window_s de la creación del token.
+
+    Un sniper compra en el bloque de lanzamiento: su ventaja no es copiable (llegaríamos siempre después).
+    None si no conocemos la fecha de creación de ninguno de sus tokens.
+    """
+    buys = sorted((s for s in swaps if s.side == "buy" and s.token_mint in created),
+                  key=lambda s: s.block_time)[-last_n:]
+    if not buys:
+        return None
+    return sum((b.block_time - created[b.token_mint]).total_seconds() <= window_s for b in buys) / len(buys)
 
 
 def onchain_score(m: WalletMetrics, cfg: TrackerConfig) -> float:

@@ -256,9 +256,9 @@ async function ensureTokenRisk(sql: Sql, mint: string) {
   if (!t) return;
   const audit = t.audit ?? {};
   await sql`
-    insert into token_risk (token_mint, liquidity_usd, mint_authority, freeze_authority, top10_holders_pct, raw)
+    insert into token_risk (token_mint, liquidity_usd, mint_authority, freeze_authority, top10_holders_pct, created_at, raw)
     values (${mint}, ${t.liquidity ?? null}, ${t.mintAuthority != null}, ${!audit.freezeAuthorityDisabled},
-            ${audit.topHoldersPercentage ?? null},
+            ${audit.topHoldersPercentage ?? null}, ${t.createdAt ?? null},
             ${sql.json({ symbol: t.symbol, organicScore: t.organicScore, holderCount: t.holderCount, mcap: t.mcap, audit: t.audit })})
     on conflict (token_mint) do nothing`;
 }

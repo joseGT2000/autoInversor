@@ -46,9 +46,18 @@ def quote(input_mint: str, output_mint: str, amount_raw: int, slippage_bps: int)
 
 
 def token_info(mint: str) -> dict | None:
-    """Mismo formato que trending_tokens (liquidity, audit, mintAuthority...)."""
-    found = _get(f"{JUP}/tokens/v2/search", params={"query": mint}).raise_for_status().json()
-    return next((t for t in found if t["id"] == mint), None)
+    """Mismo formato que trending_tokens (liquidity, audit, mintAuthority, createdAt...)."""
+    return token_infos([mint]).get(mint)
+
+
+def token_infos(mints: list[str]) -> dict[str, dict]:
+    """Varios tokens por llamada (la búsqueda de Jupiter acepta mints separados por comas)."""
+    out = {}
+    unique = list(dict.fromkeys(mints))
+    for i in range(0, len(unique), 100):
+        found = _get(f"{JUP}/tokens/v2/search", params={"query": ",".join(unique[i:i + 100])}).raise_for_status().json()
+        out.update({t["id"]: t for t in found})
+    return out
 
 
 def trending_tokens(interval: str = "24h", limit: int = 50) -> list[dict]:
