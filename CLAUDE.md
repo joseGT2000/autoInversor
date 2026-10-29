@@ -12,7 +12,8 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **MODO PRUEBA**: filtros relajados en `config.yaml` (valores estrictos en comentarios) → 6 wallets elegibles. Top 3: `3me2rp…`, `Cz126Z…`, `E1qzvE…` (5 de las 6 con historial idéntico de 12,3 días pero solapan ≤4 tokens → no se filtran).
 - **Copier en tiempo real EN PRODUCCIÓN** (2026-10-29): Edge Function `copier-webhook` desplegada (401 sin secreto, BD OK) y webhook Helius `552ea415…` activo vigilando el top 3. Aún sin eventos recibidos.
 - Filtro `inactiva` (último swap > `max_days_inactive`=2 días, no permanente) → el top deja de incluir wallets paradas.
-- **Dashboard** en GitHub Pages (`site/`, workflow `pages.yml` tras cada ejecución de copytrader, ~30 min). **Pendiente del usuario**: Settings → Pages → Source = "GitHub Actions". URL esperada: https://josegt2000.github.io/autoInversor/
+- **Dashboard** publicado en https://josegt2000.github.io/autoInversor/ (`site/`, workflow `pages.yml` tras cada ejecución de copytrader).
+- **Crons de GitHub no se disparaban** (0 ejecuciones programadas en 3,5 h). Movidos a minutos poco saturados (tracker 06:13, copier :07/:37, auditor 23:47 UTC). Si el 2026-10-30 siguen sin ejecutarse → disparador externo con `pg_cron` + `pg_net` de Supabase llamando a `workflow_dispatch` (requiere PAT con permiso Actions).
 
 ## Dashboard
 - `python -m copytrader export` → `site/data.json` (gitignored). La web es estática y pública: no toca Supabase.

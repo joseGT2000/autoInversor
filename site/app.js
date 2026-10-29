@@ -265,7 +265,7 @@ function audits() {
       body);
   });
   if (items[0]) items[0].open = true;
-  $("audits").replaceChildren(...(items.length ? items : [el("p", { class: "empty", text: "Todavía no hay auditorías (se generan cada día a las 23:45 UTC)." })]));
+  $("audits").replaceChildren(...(items.length ? items : [el("p", { class: "empty", text: "Todavía no hay auditorías (se generan cada día a las 23:47 UTC)." })]));
 }
 
 function config() {

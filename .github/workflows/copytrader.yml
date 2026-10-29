@@ -1,10 +1,11 @@
 name: copytrader
 
 on:
+  # Minutos "raros" a propósito: en :00 y :30 GitHub está saturado y retrasa o salta ejecuciones
   schedule:
-    - cron: "0 6 * * *"      # tracker diario 06:00 UTC
-    - cron: "*/30 * * * *"   # copier de respaldo (el principal es la Edge Function con webhook)
-    - cron: "45 23 * * *"    # auditor diario 23:45 UTC
+    - cron: "13 6 * * *"     # tracker diario 06:13 UTC
+    - cron: "7,37 * * * *"   # copier de respaldo (el principal es la Edge Function con webhook)
+    - cron: "47 23 * * *"    # auditor diario 23:47 UTC
   workflow_dispatch:
     inputs:
       command:
@@ -39,9 +40,9 @@ jobs:
         id: cmd
         run: |
           case "${{ github.event.schedule }}" in
-            "0 6 * * *")    echo "name=tracker" >> "$GITHUB_OUTPUT" ;;
-            "*/30 * * * *") echo "name=copier"  >> "$GITHUB_OUTPUT" ;;
-            "45 23 * * *")  echo "name=auditor" >> "$GITHUB_OUTPUT" ;;
+            "13 6 * * *")   echo "name=tracker" >> "$GITHUB_OUTPUT" ;;
+            "7,37 * * * *") echo "name=copier"  >> "$GITHUB_OUTPUT" ;;
+            "47 23 * * *")  echo "name=auditor" >> "$GITHUB_OUTPUT" ;;
             *)              echo "name=${{ inputs.command }}" >> "$GITHUB_OUTPUT" ;;
           esac
       - run: python -m copytrader ${{ steps.cmd.outputs.name }}
