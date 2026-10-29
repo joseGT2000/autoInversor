@@ -1,4 +1,6 @@
-"""Módulo 2: detecta swaps nuevos del top N y los copia en simulación. Cada 15 min.
+"""Módulo 2: copier de RESPALDO (cron cada 30 min). El copier principal es la Edge Function
+supabase/functions/copier-webhook (tiempo real vía webhook de Helius); este recoge lo que se le escape.
+Si cambias la lógica aquí, cambia también supabase/functions/copier-webhook/logic.ts y copier.ts.
 
 Compras: el allocator decide el tamaño y se simula con una cotización real de Jupiter en el
 momento de la detección (precio que obtendríamos nosotros, no el del whale). Ventas: se vende la
@@ -11,7 +13,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from copytrader import market
+from copytrader import market, webhook
 from copytrader.allocator import BuySignal, PortfolioState, size_buy, size_sell
 from copytrader.config import Config
 from copytrader.db import connect
@@ -57,6 +59,7 @@ def run(cfg: Config) -> None:
             log.warning("presupuesto de Helius agotado: %s", e)
             conn.rollback()
         cash, total = portfolio_totals(conn, ctx)
+        webhook.sync(conn, cfg)
     log.info("cartera: %.2f %s (cash %.2f) | créditos Helius: %d", total, cfg.portfolio.currency, cash, rpc.credits_used)
 
 
@@ -161,10 +164,14 @@ def copy_buy(conn, sw: Swap, ctx: Context) -> None:
     decimals = (market.prices([sw.token_mint]).get(sw.token_mint) or {}).get("decimals")
     if not q or decimals is None:
         return record(conn, sw, ctx, side="buy", status="failed", value=alloc.amount, reason=f"{alloc.reason}:no_route")
+    impact = float(q.get("priceImpactPct") or 0)
+    if impact > ctx.cfg.simulation.max_price_impact_pct:
+        return record(conn, sw, ctx, side="buy", status="failed", value=alloc.amount, price_impact=impact,
+                      reason=f"{alloc.reason}:price_impact")
 
     qty = ctx.haircut(int(q["outAmount"]) / 10 ** decimals)
     record(conn, sw, ctx, side="buy", status="filled", token_amount=qty, value=alloc.amount, fee=ctx.fee,
-           price_impact=float(q.get("priceImpactPct") or 0), reason=alloc.reason)
+           price_impact=impact, reason=alloc.reason)
     conn.execute(
         """insert into positions (token_mint, source_wallet, token_amount, cost_basis) values (%s, %s, %s, %s)
            on conflict (token_mint, source_wallet) do update set

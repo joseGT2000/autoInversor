@@ -1,0 +1,26 @@
+name: deploy-function
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/functions/**"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno test -q supabase/functions/copier-webhook/logic_test.ts
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase secrets set --project-ref "$PROJECT_REF" WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
+      - run: supabase functions deploy copier-webhook --project-ref "$PROJECT_REF" --no-verify-jwt

@@ -10,7 +10,16 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Fase 3 – Copier implementado** (2026-10-29): probado con cotizaciones reales (compra+venta parcial en transacción revertida).
 - **Fase 4 – Auditor implementado** (2026-10-29): 22 tests OK. Informe diario en `reports/audit-YYYY-MM-DD.md` (Actions lo commitea → hacer `git pull` antes de trabajar en local) + resumen de la ejecución + tabla `audit_reports`.
 - **MODO PRUEBA**: filtros relajados en `config.yaml` (valores estrictos en comentarios) → 6 wallets elegibles. Top 3: `3me2rp…`, `Cz126Z…`, `E1qzvE…` (5 de las 6 con historial idéntico de 12,3 días pero solapan ≤4 tokens → no se filtran).
-- Cartera: 200 € sin operaciones aún. Siguiente: dejar correr la simulación, revisar informes; mejoras: webhooks Helius (tiempo real), filtro de liquidez en copier si muchos `no_route`.
+- **Copier en tiempo real** (2026-10-29): Edge Function `supabase/functions/copier-webhook` (TypeScript) recibe el webhook raw de Helius. Código y tests OK, probado en local contra BD real (`dry_run.ts`, revertido). **Pendiente**: secrets de GitHub (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`=pjtgqfzpjruegnyzmsdx, `WEBHOOK_URL`, `WEBHOOK_SECRET`) → desplegar → crear webhook (`webhook.sync`, lo hacen tracker/copier si hay `WEBHOOK_URL`).
+- Cartera: 200 € sin operaciones aún. Las compras recientes del top son memecoins casi muertas (price impact 3–11 % incluso con importes pequeños).
+
+## Tiempo real: cómo funciona
+- Helius webhook `raw` (1 crédito/evento) → `copier-webhook` (sin JWT; auth = cabecera `Authorization` == `WEBHOOK_SECRET`) → misma lógica que `copier.py`. Se despliega con `.github/workflows/deploy-function.yml` al cambiar `supabase/functions/**`.
+- **Lógica duplicada Python/TS**: `logic.ts`+`copier.ts` ↔ `solana.py`/`allocator.py`/`copier.py`. Cambiar ambas; `logic_test.ts` replica los tests Python.
+- Config compartida: Python publica `config.yaml` en la tabla `settings` en cada ejecución. Direcciones vigiladas (top N + wallets con posiciones) en `webhook_state`; solo se llama a la API de Helius si cambian (editar = 100 créditos).
+- Dedup: PK de `wallet_trades` (quien inserta el swap, copia). `copier.py` queda de respaldo cada 30 min.
+- Copia con price impact > `max_price_impact_pct` (fracción, 0.15) → `failed`.
+- Prueba local: `cd supabase/functions/copier-webhook; deno run -A --env-file=../../../.env dry_run.ts`.
 
 ## Auditor: cómo funciona
 - Unidad = ronda (wallet × token): coste, ventas y lo abierto a precio de Jupiter (sin precio = 0). Desglose por wallet, regla de entrada del allocator y riesgo del token (alto/medio/bajo según liquidez, authorities, top10).
@@ -37,7 +46,8 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Nunca loguear URLs de Helius** (llevan la key y los logs de Actions son públicos): logger `httpx` en WARNING y errores sin URL.
 
 ## Estructura y comandos
-- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`, `copier.py`, `auditor.py`. Informes en `reports/`.
+- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`, `copier.py` (respaldo), `auditor.py`, `webhook.py`. Informes en `reports/`. Edge Function en `supabase/functions/copier-webhook/`.
+- Deno 2.9 instalado (winget) para la Edge Function: `deno test`, `deno check index.ts`.
 - `db/schema.sql` (Postgres idempotente), `tests/`, `.github/workflows/copytrader.yml` (un workflow, 3 crons + `workflow_dispatch`).
 - `.\.venv\Scripts\python -m pytest -q` · `.\.venv\Scripts\python -m copytrader {tracker|copier|auditor|init-db}`
 - En PowerShell nuevo, si `python`/`git` no se encuentran: reiniciar la terminal (PATH recién instalado).
@@ -45,7 +55,7 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 
 ## Decisiones tomadas
 - Mercado: **cripto on-chain en Solana** (swaps en DEX vía Jupiter/Raydium/Pump.fun; fees ~0,001 $ + priority fee).
-- Ejecución: **nube, GitHub Actions** en repo público (minutos ilimitados, copier cada 15 min). Estado en Supabase.
+- Ejecución: **nube**. Copier en tiempo real = webhook Helius → Supabase Edge Function; tracker/auditor y copier de respaldo (30 min) en GitHub Actions (repo público). Estado en Supabase.
 - Capital virtual: **200 €**, top 3 wallets.
 - Tokens: **cualquiera, memecoins (Pump.fun) incluidas**; los filtros anti-rug solo registran el riesgo (no bloquean) para que el auditor mida si conviene filtrar.
 - Fuentes: **solo gratuitas** de momento.

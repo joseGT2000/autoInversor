@@ -11,7 +11,7 @@ import logging
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 
-from copytrader import market
+from copytrader import market, webhook
 from copytrader.config import Config
 from copytrader.db import connect
 from copytrader.scoring import (PERMANENT_EXCLUSIONS, compute_metrics, copy_score, exclusion_reason,
@@ -43,6 +43,7 @@ def run(cfg: Config) -> None:
             conn.rollback()
         ranking = score_all(conn, cfg)
         conn.commit()
+        webhook.sync(conn, cfg)
     log.info("créditos Helius usados: %d", rpc.credits_used)
     for row in ranking[: cfg.portfolio.top_n]:
         log.info("top %d  %s  score=%.3f", row["rank"], row["address"], row["final_score"])

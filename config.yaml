@@ -17,6 +17,7 @@ allocator:
 
 simulation:
   slippage_bps: 100           # sobre la cotización real de Jupiter se descuenta la mitad
+  max_price_impact_pct: 0.15  # cotización que mueve el precio > 15 % -> failed (no ejecutable de verdad)
   priority_fee_sol: 0.0001
   execution_delay_s: 5
 

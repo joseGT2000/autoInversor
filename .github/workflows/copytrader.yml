@@ -3,7 +3,7 @@ name: copytrader
 on:
   schedule:
     - cron: "0 6 * * *"      # tracker diario 06:00 UTC
-    - cron: "*/15 * * * *"   # copier cada 15 min (GitHub puede retrasarlo varios minutos)
+    - cron: "*/30 * * * *"   # copier de respaldo (el principal es la Edge Function con webhook)
     - cron: "45 23 * * *"    # auditor diario 23:45 UTC
   workflow_dispatch:
     inputs:
@@ -26,6 +26,8 @@ jobs:
       HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       BIRDEYE_API_KEY: ${{ secrets.BIRDEYE_API_KEY }}  # opcional
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,7 +40,7 @@ jobs:
         run: |
           case "${{ github.event.schedule }}" in
             "0 6 * * *")    echo "name=tracker" >> "$GITHUB_OUTPUT" ;;
-            "*/15 * * * *") echo "name=copier"  >> "$GITHUB_OUTPUT" ;;
+            "*/30 * * * *") echo "name=copier"  >> "$GITHUB_OUTPUT" ;;
             "45 23 * * *")  echo "name=auditor" >> "$GITHUB_OUTPUT" ;;
             *)              echo "name=${{ inputs.command }}" >> "$GITHUB_OUTPUT" ;;
           esac

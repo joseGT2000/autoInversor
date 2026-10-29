@@ -32,6 +32,8 @@ class AllocatorConfig(BaseModel):
 class SimulationConfig(BaseModel):
     # La cotización de Jupiter ya incluye el price impact; además se descuenta la mitad del slippage
     slippage_bps: int = 100
+    # Si la cotización mueve el precio más que esto, la copia no sería ejecutable de verdad -> failed
+    max_price_impact_pct: float = 0.15
     priority_fee_sol: float = 0.0001
     # Retraso extra simulado entre la detección y nuestra ejecución
     execution_delay_s: int = 5
@@ -89,6 +91,14 @@ class Config(BaseModel):
     @property
     def birdeye_api_key(self) -> str | None:
         return os.environ.get("BIRDEYE_API_KEY", "").strip() or None
+
+    @property
+    def webhook_url(self) -> str | None:
+        return os.environ.get("WEBHOOK_URL", "").strip() or None
+
+    @property
+    def webhook_secret(self) -> str | None:
+        return os.environ.get("WEBHOOK_SECRET", "").strip() or None
 
     @property
     def database_url(self) -> str:

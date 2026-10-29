@@ -77,6 +77,21 @@ create table if not exists positions (
     primary key (token_mint, source_wallet)
 );
 
+-- Copia de config.yaml para la Edge Function (la sincroniza Python en cada ejecución)
+create table if not exists settings (
+    id             int primary key default 1 check (id = 1),
+    config         jsonb not null,
+    updated_at     timestamptz not null default now()
+);
+
+-- Última lista de direcciones enviada al webhook de Helius (editar cuesta 100 créditos)
+create table if not exists webhook_state (
+    id             int primary key default 1 check (id = 1),
+    webhook_id     text not null,
+    addresses      text[] not null,
+    updated_at     timestamptz not null default now()
+);
+
 create table if not exists audit_reports (
     day            date primary key,
     equity         numeric not null,

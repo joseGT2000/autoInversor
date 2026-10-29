@@ -1,0 +1,5 @@
+project_id = "autoInversor"
+
+[functions.copier-webhook]
+# Helius no envía JWT de Supabase: la función se protege con WEBHOOK_SECRET (cabecera Authorization)
+verify_jwt = false
