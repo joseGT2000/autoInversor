@@ -2,13 +2,14 @@
 import argparse
 import logging
 
-from copytrader import auditor, copier, db, tracker
+from copytrader import auditor, copier, db, export, tracker
 from copytrader.config import load_config
 
 COMMANDS = {
     "tracker": tracker.run,
     "copier": copier.run,
     "auditor": auditor.run,
+    "export": export.run,
     "init-db": lambda cfg: db.init_schema(cfg.database_url),
 }
 

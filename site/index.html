@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Copy-Trader Simulación</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M2 12 L6 7 L9 9 L14 3' fill='none' stroke='%232a78d6' stroke-width='2'/></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Copy-Trader <span class="pill">simulación</span></h1>
+      <p class="muted" id="updated">Cargando…</p>
+    </div>
+    <p class="muted small">Sin dinero real · Solana · datos cada ~30 min</p>
+  </header>
+
+  <main>
+    <section class="tiles" id="tiles" aria-label="Resumen de la cartera"></section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Valor de la cartera</h2>
+        <span class="legend"><i class="swatch line"></i>Cartera <i class="swatch dash"></i>Capital inicial</span>
+      </div>
+      <div class="chart" id="equity-chart"></div>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="trades" aria-selected="true">Operaciones</button>
+      <button role="tab" data-tab="positions">Posiciones</button>
+      <button role="tab" data-tab="ranking">Ranking</button>
+      <button role="tab" data-tab="audits">Auditorías</button>
+      <button role="tab" data-tab="config">Configuración</button>
+    </nav>
+
+    <section class="card tab" id="tab-trades">
+      <div class="card-head">
+        <h2>Operaciones simuladas</h2>
+        <select id="trade-filter" aria-label="Filtrar por estado">
+          <option value="">Todas</option>
+          <option value="filled">Ejecutadas</option>
+          <option value="failed">Fallidas</option>
+          <option value="skipped">Omitidas</option>
+        </select>
+      </div>
+      <div class="table-wrap" id="trades"></div>
+    </section>
+
+    <section class="card tab" id="tab-positions" hidden>
+      <h2>Posiciones abiertas</h2>
+      <div class="table-wrap" id="positions"></div>
+    </section>
+
+    <section class="card tab" id="tab-ranking" hidden>
+      <h2>Ranking de wallets <span class="muted small" id="ranking-note"></span></h2>
+      <div class="table-wrap" id="ranking"></div>
+      <h3>Wallets seguidas por fuente y estado</h3>
+      <div class="table-wrap" id="wallets"></div>
+    </section>
+
+    <section class="card tab" id="tab-audits" hidden>
+      <div class="card-head">
+        <h2>PnL por wallet copiada <span class="muted small">(última auditoría)</span></h2>
+        <span class="legend"><i class="swatch pos"></i>Ganancia <i class="swatch neg"></i>Pérdida</span>
+      </div>
+      <div class="chart" id="wallet-chart"></div>
+      <h2>Informes diarios</h2>
+      <div id="audits"></div>
+    </section>
+
+    <section class="card tab" id="tab-config" hidden>
+      <h2>Configuración activa</h2>
+      <p class="muted small">Copia de <code>config.yaml</code> que usan el copier y la Edge Function.</p>
+      <pre id="config"></pre>
+      <h3>Wallets vigiladas en tiempo real (webhook Helius)</h3>
+      <div id="webhook"></div>
+    </section>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="status" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -10,7 +10,14 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Fase 3 – Copier implementado** (2026-10-29): probado con cotizaciones reales (compra+venta parcial en transacción revertida).
 - **Fase 4 – Auditor implementado** (2026-10-29): 22 tests OK. Informe diario en `reports/audit-YYYY-MM-DD.md` (Actions lo commitea → hacer `git pull` antes de trabajar en local) + resumen de la ejecución + tabla `audit_reports`.
 - **MODO PRUEBA**: filtros relajados en `config.yaml` (valores estrictos en comentarios) → 6 wallets elegibles. Top 3: `3me2rp…`, `Cz126Z…`, `E1qzvE…` (5 de las 6 con historial idéntico de 12,3 días pero solapan ≤4 tokens → no se filtran).
-- **Copier en tiempo real** (2026-10-29): Edge Function `supabase/functions/copier-webhook` (TypeScript) recibe el webhook raw de Helius. Código y tests OK, probado en local contra BD real (`dry_run.ts`, revertido). **Pendiente**: secrets de GitHub (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`=pjtgqfzpjruegnyzmsdx, `WEBHOOK_URL`, `WEBHOOK_SECRET`) → desplegar → crear webhook (`webhook.sync`, lo hacen tracker/copier si hay `WEBHOOK_URL`).
+- **Copier en tiempo real EN PRODUCCIÓN** (2026-10-29): Edge Function `copier-webhook` desplegada (401 sin secreto, BD OK) y webhook Helius `552ea415…` activo vigilando el top 3. Aún sin eventos recibidos.
+- Filtro `inactiva` (último swap > `max_days_inactive`=2 días, no permanente) → el top deja de incluir wallets paradas.
+- **Dashboard** en GitHub Pages (`site/`, workflow `pages.yml` tras cada ejecución de copytrader, ~30 min). **Pendiente del usuario**: Settings → Pages → Source = "GitHub Actions". URL esperada: https://josegt2000.github.io/autoInversor/
+
+## Dashboard
+- `python -m copytrader export` → `site/data.json` (gitignored). La web es estática y pública: no toca Supabase.
+- `site/app.js` vanilla + SVG propio (paleta dataviz validada, modo oscuro). Texto externo siempre con `textContent`; markdown de informes con marked + DOMPurify.
+- Probar en local: preview `dashboard` de `.claude/launch.json` (http.server en :8765).
 - Cartera: 200 € sin operaciones aún. Las compras recientes del top son memecoins casi muertas (price impact 3–11 % incluso con importes pequeños).
 
 ## Tiempo real: cómo funciona
@@ -46,7 +53,7 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 - **Nunca loguear URLs de Helius** (llevan la key y los logs de Actions son públicos): logger `httpx` en WARNING y errores sin URL.
 
 ## Estructura y comandos
-- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`, `copier.py` (respaldo), `auditor.py`, `webhook.py`. Informes en `reports/`. Edge Function en `supabase/functions/copier-webhook/`.
+- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`, `copier.py` (respaldo), `auditor.py`, `webhook.py`, `export.py`. Informes en `reports/`. Edge Function en `supabase/functions/copier-webhook/`.
 - Deno 2.9 instalado (winget) para la Edge Function: `deno test`, `deno check index.ts`.
 - `db/schema.sql` (Postgres idempotente), `tests/`, `.github/workflows/copytrader.yml` (un workflow, 3 crons + `workflow_dispatch`).
 - `.\.venv\Scripts\python -m pytest -q` · `.\.venv\Scripts\python -m copytrader {tracker|copier|auditor|init-db}`

@@ -5,6 +5,7 @@ ventana no tienen coste conocido y se ignoran. Lo no vendido no cuenta (criterio
 """
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 
 from copytrader.config import TrackerConfig
 from copytrader.solana import Swap
@@ -25,16 +26,18 @@ class WalletMetrics:
     profitable_days_ratio: float = 0.0
     max_drawdown_sol: float = 0.0
     avg_buy_sol: float = 0.0
+    days_since_last_swap: float = 0.0
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-def compute_metrics(swaps: list[Swap]) -> WalletMetrics:
+def compute_metrics(swaps: list[Swap], now: datetime | None = None) -> WalletMetrics:
     m = WalletMetrics(n_swaps=len(swaps))
     if not swaps:
         return m
     swaps = sorted(swaps, key=lambda s: s.block_time)
+    m.days_since_last_swap = ((now or datetime.now(timezone.utc)) - swaps[-1].block_time).total_seconds() / 86400
 
     per_day: dict = defaultdict(int)
     for s in swaps:
@@ -103,6 +106,8 @@ def exclusion_reason(m: WalletMetrics, cfg: TrackerConfig) -> str | None:
         return "pocas_posiciones_cerradas"
     if m.realized_pnl_sol <= 0:
         return "pnl_negativo"
+    if m.days_since_last_swap > cfg.max_days_inactive:
+        return "inactiva"  # no permanente: vuelve al ranking cuando opere otra vez
     return None
 
 

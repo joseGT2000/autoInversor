@@ -33,6 +33,7 @@ tracker:
   max_trades_per_day: 200     # más swaps/día = bot (no se relaja: los bots no son copiables)
   min_wallet_age_days: 3      # estricto: 14
   min_closed_positions: 3     # estricto: 5
+  max_days_inactive: 2        # sin swaps en más días -> fuera del ranking (no copiaríamos nada)
   feedback_weight: 0.5        # peso del rendimiento real de copiarla
   min_copy_closed: 3
   score_weights: {roi: 0.35, win_rate: 0.30, profitable_days: 0.20, sample_size: 0.15, drawdown: 0.20}

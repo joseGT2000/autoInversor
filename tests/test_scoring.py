@@ -36,7 +36,7 @@ def test_exclusion_and_scores():
     cfg = TrackerConfig(min_trades_30d=2, min_wallet_age_days=1, min_closed_positions=1)
     good = compute_metrics([
         swap(1, 0, "buy", "A", 10, 1.0), swap(2, 3, "sell", "A", 10, 2.0),
-    ])
+    ], now=T0 + timedelta(days=4))
     assert exclusion_reason(good, cfg) is None
     assert 0 < onchain_score(good, cfg) <= 1
 
@@ -46,6 +46,14 @@ def test_exclusion_and_scores():
     wash = compute_metrics([s for i in range(12) for s in (
         swap(2 * i, 0, "buy", f"T{i}", 10, 0.1), swap(2 * i + 1, 0, "sell", f"T{i}", 10, 0.099))])
     assert exclusion_reason(wash, cfg) == "wash"
+
+
+def test_inactive_wallet_leaves_ranking():
+    cfg = TrackerConfig(min_trades_30d=2, min_wallet_age_days=1, min_closed_positions=1, max_days_inactive=2)
+    swaps = [swap(1, 0, "buy", "A", 10, 1.0), swap(2, 3, "sell", "A", 10, 2.0)]
+    assert exclusion_reason(compute_metrics(swaps, now=T0 + timedelta(days=4)), cfg) is None
+    m = compute_metrics(swaps, now=T0 + timedelta(days=6))
+    assert round(m.days_since_last_swap) == 3 and exclusion_reason(m, cfg) == "inactiva"
 
 
 def test_feedback_blend():

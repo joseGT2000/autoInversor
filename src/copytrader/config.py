@@ -52,6 +52,7 @@ class TrackerConfig(BaseModel):
     max_trades_per_day: int = 200  # por encima probablemente sea un bot
     min_wallet_age_days: int = 14
     min_closed_positions: int = 5
+    max_days_inactive: float = 2  # sin swaps en más días -> fuera del ranking del día
     # Peso del rendimiento real de copiar la wallet frente a su score on-chain
     feedback_weight: float = 0.5
     min_copy_closed: int = 3  # copias cerradas mínimas para que cuente el feedback

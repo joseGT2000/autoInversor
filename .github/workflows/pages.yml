@@ -1,0 +1,51 @@
+name: pages
+
+# Publica el dashboard (site/) en GitHub Pages con un data.json recién exportado de la BD.
+# La web es pública y estática: nunca recibe credenciales.
+on:
+  workflow_run:
+    workflows: [copytrader]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ["site/**", "src/copytrader/export.py"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - run: python -m copytrader export
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
