@@ -21,7 +21,12 @@ def test_buy_with_native_sol():
 
 def test_sell_for_usdc_converted_to_sol():
     s = parse_swap(tx(1e9, 1e9, [("TOK", 1000), (USDC, 0)], [("TOK", 0), (USDC, 50)]), W, 100)
-    assert (s.side, s.sol_amount) == ("sell", 0.5)
+    assert (s.side, s.sol_amount, s.post_balance) == ("sell", 0.5, 0)
+
+
+def test_partial_sell_keeps_post_balance():
+    s = parse_swap(tx(1e9, 2e9, [("TOK", 1000)], [("TOK", 750)]), W, 100)
+    assert (s.side, s.token_amount, s.post_balance) == ("sell", 250, 750)
 
 
 def test_wsol_counts_as_quote():

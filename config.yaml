@@ -15,9 +15,15 @@ allocator:
   max_fee_pct: 0.02
 
 simulation:
-  slippage_bps: 100
+  slippage_bps: 100           # sobre la cotización real de Jupiter se descuenta la mitad
   priority_fee_sol: 0.0001
   execution_delay_s: 5
+
+copier:
+  max_signal_age_min: 60      # no copiar swaps más viejos
+  copy_same_wallet_adds: false
+  signatures_per_wallet: 100
+  helius_credit_budget: 3000  # por ejecución (cada 15 min)
 
 tracker:
   lookback_days: 30

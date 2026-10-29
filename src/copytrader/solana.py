@@ -103,6 +103,7 @@ class Swap:
     token_mint: str
     token_amount: float
     sol_amount: float   # valor en SOL (stables convertidos con sol_usd)
+    post_balance: float | None = None  # saldo del token tras el swap (para replicar ventas parciales)
 
 
 def _token_deltas(meta: dict, owner: str) -> dict[str, float]:
@@ -150,4 +151,6 @@ def parse_swap(tx: dict, wallet: str, sol_usd: float) -> Swap | None:
         token_mint=mint,
         token_amount=abs(amount),
         sol_amount=abs(quote_sol),
+        post_balance=sum(float(b["uiTokenAmount"]["uiAmountString"] or 0) for b in meta.get("postTokenBalances") or []
+                         if b.get("owner") == wallet and b["mint"] == mint),
     )

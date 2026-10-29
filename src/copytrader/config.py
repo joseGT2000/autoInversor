@@ -30,10 +30,18 @@ class AllocatorConfig(BaseModel):
 
 
 class SimulationConfig(BaseModel):
+    # La cotización de Jupiter ya incluye el price impact; además se descuenta la mitad del slippage
     slippage_bps: int = 100
     priority_fee_sol: float = 0.0001
     # Retraso extra simulado entre la detección y nuestra ejecución
     execution_delay_s: int = 5
+
+
+class CopierConfig(BaseModel):
+    max_signal_age_min: int = 60     # swaps más antiguos no se copian (llegaríamos tarde)
+    copy_same_wallet_adds: bool = False  # recompras de la misma wallet en un token que ya copiamos
+    signatures_per_wallet: int = 100
+    helius_credit_budget: int = 3_000
 
 
 class TrackerConfig(BaseModel):
@@ -67,6 +75,7 @@ class Config(BaseModel):
     portfolio: PortfolioConfig = PortfolioConfig()
     allocator: AllocatorConfig = AllocatorConfig()
     simulation: SimulationConfig = SimulationConfig()
+    copier: CopierConfig = CopierConfig()
     tracker: TrackerConfig = TrackerConfig()
 
     @property
