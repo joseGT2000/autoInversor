@@ -3,8 +3,8 @@
 Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper trading)**, audita resultados y retroalimenta el ranking. Dinero real solo tras la fase de auditoría; la decisión y ejecución real la toma el usuario.
 
 ## Estado actual
-- Fase: **1 – Setup** (2026-10-29). Hecho: Python 3.12 + git instalados, `.venv`, esqueleto, esquema BD, allocator con tests (6 OK), workflow de Actions, `git init` (sin commit).
-- Pendiente del usuario: cuentas GitHub, Helius y Supabase → `.env` y GitHub Secrets; luego `python -m copytrader init-db`.
+- Fase: **1 – Setup completado** (2026-10-29). Repo **público** github.com/joseGT2000/autoInversor (rama `main`). Supabase con las 7 tablas creadas, Helius verificado (key o URL del RPC valen), allocator 6 tests OK. Birdeye sin key (opcional).
+- Pendiente de comprobar: GitHub Secrets (`HELIUS_API_KEY`, `DATABASE_URL`) y primera ejecución de Actions (aún 0 runs).
 - Siguiente: Fase 2 = tracker (Helius + Birdeye/GMGN). Fase 3 copier, Fase 4 auditor.
 
 ## Estructura y comandos
@@ -16,7 +16,7 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 
 ## Decisiones tomadas
 - Mercado: **cripto on-chain en Solana** (swaps en DEX vía Jupiter/Raydium/Pump.fun; fees ~0,001 $ + priority fee).
-- Ejecución: **nube, GitHub Actions** (cron). Estado persistente fuera del runner (ver Stack).
+- Ejecución: **nube, GitHub Actions** en repo público (minutos ilimitados, copier cada 15 min). Estado en Supabase.
 - Capital virtual: **200 €**, top 3 wallets.
 - Tokens: **cualquiera, memecoins (Pump.fun) incluidas**; los filtros anti-rug solo registran el riesgo (no bloquean) para que el auditor mida si conviene filtrar.
 - Fuentes: **solo gratuitas** de momento.
@@ -55,4 +55,4 @@ Flujo: `tracker → ranking → copier(+allocator) → trades simulados → audi
 - Mantener este archivo compacto: actualizar "Estado actual" y "Decisiones" en cada cambio relevante.
 
 ## Decisiones abiertas
-- **Repo público o privado**: el copier cada 15 min ≈ 2.900 min/mes de Actions; privado solo da 2.000 gratis. Opciones: repo público (ilimitado), copier cada 30 min, o Helius webhooks → worker (tiempo real, sin polling).
+- Ninguna. Mejora futura: Helius webhooks → worker para copia en tiempo real en vez de cron de 15 min.

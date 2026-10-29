@@ -1,6 +1,7 @@
 """Carga y valida config.yaml. Los secretos vienen del entorno (.env / GitHub Secrets)."""
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import yaml
 from dotenv import load_dotenv
@@ -51,7 +52,11 @@ class Config(BaseModel):
 
     @property
     def helius_api_key(self) -> str:
-        return os.environ["HELIUS_API_KEY"]
+        # Acepta la key sola o la URL del RPC de Helius (…?api-key=XXXX)
+        value = os.environ["HELIUS_API_KEY"].strip()
+        if value.startswith("http"):
+            value = parse_qs(urlparse(value).query)["api-key"][0]
+        return value
 
     @property
     def database_url(self) -> str:
