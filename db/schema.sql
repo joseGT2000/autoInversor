@@ -7,6 +7,9 @@ create table if not exists wallets (
     excluded       boolean not null default false,
     exclude_reason text
 );
+alter table wallets add column if not exists last_signature text;     -- última firma escaneada
+alter table wallets add column if not exists last_scanned_at timestamptz;
+alter table wallets add column if not exists first_activity timestamptz;  -- firma más antigua vista
 
 -- Un score por wallet y día (histórico para ver cómo evoluciona el ranking)
 create table if not exists wallet_scores (

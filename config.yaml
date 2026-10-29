@@ -20,7 +20,24 @@ simulation:
   execution_delay_s: 5
 
 tracker:
+  lookback_days: 30
   min_trades_30d: 20
-  max_trades_per_day: 200
+  max_trades_per_day: 200     # más swaps/día = bot
   min_wallet_age_days: 14
-  feedback_weight: 0.5
+  min_closed_positions: 5
+  feedback_weight: 0.5        # peso del rendimiento real de copiarla
+  min_copy_closed: 3
+  score_weights: {roi: 0.35, win_rate: 0.30, profitable_days: 0.20, sample_size: 0.15, drawdown: 0.20}
+  # Descubrimiento
+  manual_wallets: []          # wallets que veas en GMGN/Birdeye/Solscan y quieras seguir
+  birdeye_top_traders: 50     # top PnL semanal de Birdeye (solo si hay BIRDEYE_API_KEY)
+  trending_interval: 24h
+  trending_tokens: 30
+  min_token_liquidity_usd: 20000
+  pool_tx_sample: 100
+  min_token_appearances: 2
+  min_discovery_swap_sol: 0.5
+  # Escaneo (créditos Helius: plan gratis 1M/mes)
+  max_wallets_scanned_per_run: 25   # ~8 créditos/s en el plan gratis -> ~15 min por ejecución
+  max_tx_per_wallet: 200
+  helius_credit_budget: 25000

@@ -18,11 +18,11 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     env:
       HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      BIRDEYE_API_KEY: ${{ secrets.BIRDEYE_API_KEY }}
+      BIRDEYE_API_KEY: ${{ secrets.BIRDEYE_API_KEY }}  # opcional
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

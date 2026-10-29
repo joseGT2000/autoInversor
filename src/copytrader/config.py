@@ -37,11 +37,30 @@ class SimulationConfig(BaseModel):
 
 
 class TrackerConfig(BaseModel):
+    lookback_days: int = 30
     min_trades_30d: int = 20
     max_trades_per_day: int = 200  # por encima probablemente sea un bot
     min_wallet_age_days: int = 14
+    min_closed_positions: int = 5
     # Peso del rendimiento real de copiar la wallet frente a su score on-chain
     feedback_weight: float = 0.5
+    min_copy_closed: int = 3  # copias cerradas mínimas para que cuente el feedback
+    score_weights: dict[str, float] = Field(default_factory=lambda: {
+        "roi": 0.35, "win_rate": 0.30, "profitable_days": 0.20, "sample_size": 0.15, "drawdown": 0.20,
+    })
+    # Descubrimiento de candidatas
+    manual_wallets: list[str] = Field(default_factory=list)
+    birdeye_top_traders: int = 50  # solo si hay BIRDEYE_API_KEY
+    trending_interval: str = "24h"
+    trending_tokens: int = 30
+    min_token_liquidity_usd: float = 20_000
+    pool_tx_sample: int = 100
+    min_token_appearances: int = 2  # candidata si opera en >= N tokens trending
+    min_discovery_swap_sol: float = 0.5  # los bots de volumen usan importes pequeños
+    # Escaneo de historial
+    max_wallets_scanned_per_run: int = 25
+    max_tx_per_wallet: int = 200
+    helius_credit_budget: int = 25_000  # por ejecución; plan gratis = 1M/mes
 
 
 class Config(BaseModel):
@@ -57,6 +76,10 @@ class Config(BaseModel):
         if value.startswith("http"):
             value = parse_qs(urlparse(value).query)["api-key"][0]
         return value
+
+    @property
+    def birdeye_api_key(self) -> str | None:
+        return os.environ.get("BIRDEYE_API_KEY", "").strip() or None
 
     @property
     def database_url(self) -> str:

@@ -20,6 +20,8 @@ def main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx registra las URLs completas y la de Helius lleva la API key (los logs de Actions son públicos)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     COMMANDS[args.command](load_config(args.config))
 
 

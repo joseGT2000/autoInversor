@@ -4,11 +4,25 @@ Rastrea wallets "smart money" on-chain, copia sus swaps **en simulación (paper 
 
 ## Estado actual
 - Fase: **1 – Setup completado** (2026-10-29). Repo **público** github.com/joseGT2000/autoInversor (rama `main`). Supabase con las 7 tablas creadas, Helius verificado (key o URL del RPC valen), allocator 6 tests OK. Birdeye sin key (opcional).
-- Pendiente de comprobar: GitHub Secrets (`HELIUS_API_KEY`, `DATABASE_URL`) y primera ejecución de Actions (aún 0 runs).
-- Siguiente: Fase 2 = tracker (Helius + Birdeye/GMGN). Fase 3 copier, Fase 4 auditor.
+- **Fase 2 – Tracker implementado** (2026-10-29): descubrimiento + escaneo incremental + scoring + feedback. 14 tests OK. 2 ejecuciones reales (~3k créditos c/u).
+- Pools trending = casi solo bots (17 `wash`, 12 `bot`). **Birdeye `/trader/gainers-losers` ordenado por `realized_pnl`** funciona (ordenar por `PnL` da basura no realizada).
+- Ranking 2026-10-29: **1 elegible** (`9R3m89…`, 960 SOL realizados/30d, win-rate 81 %, score 0,51). 5 wallets Birdeye muy buenas (win-rate ~100 %) caen por `historial_corto` con historial idéntico de 12,2 días → probable mismo operador; entrarán en ~2 días. Pendiente: detectar wallets vinculadas para no concentrar.
+- Siguiente: Fase 3 copier (funciona aunque haya < top_n elegibles), Fase 4 auditor.
+
+## Tracker: cómo funciona
+- Descubrimiento: tokens trending de Jupiter (`lite-api.jup.ag/tokens/v2/toptrending`) → pool principal (DexScreener) → últimos swaps del pool → candidata si opera en ≥2 tokens trending. Más `tracker.manual_wallets`.
+- Swaps = cambios de balance de la wallet (SOL+WSOL+USDC/USDT vs 1 token); DEX-agnóstico. token→token se ignora.
+- Score: PnL realizado (coste medio) en SOL, win-rate de tokens cerrados (≥90 % vendido), días rentables, tamaño de muestra, drawdown. Pesos en `config.yaml`. Feedback = ROI de nuestras copias (≥3 cerradas).
+- Exclusión permanente por `bot` (> max_trades_per_day) y `wash` (≥10 cerradas, win-rate 0, |ROI|<5 %); el resto (pocos trades, PnL negativo…) solo las saca del ranking del día.
+- Descubrimiento en pools: muestra repartida en las últimas 1.000 firmas y solo swaps ≥ 0,5 SOL.
+
+## Helius (plan gratis) – restricciones
+- Solo RPC estándar (1 crédito); Enhanced API cuesta 100. 1M créditos/mes; ~8 créditos/s (cada tx de un lote cuenta).
+- `getTransaction` necesita `maxSupportedTransactionVersion: 1`.
+- **Nunca loguear URLs de Helius** (llevan la key y los logs de Actions son públicos): logger `httpx` en WARNING y errores sin URL.
 
 ## Estructura y comandos
-- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` (lógica pura), `db.py`, `tracker.py`, `copier.py`, `auditor.py` (stubs con TODO).
+- `src/copytrader/`: `config.py` (pydantic, lee `config.yaml` + `.env`), `allocator.py` y `scoring.py` (lógica pura), `solana.py` (RPC + `parse_swap`), `market.py` (Jupiter/DexScreener), `db.py`, `tracker.py`; `copier.py`, `auditor.py` aún stubs.
 - `db/schema.sql` (Postgres idempotente), `tests/`, `.github/workflows/copytrader.yml` (un workflow, 3 crons + `workflow_dispatch`).
 - `.\.venv\Scripts\python -m pytest -q` · `.\.venv\Scripts\python -m copytrader {tracker|copier|auditor|init-db}`
 - En PowerShell nuevo, si `python`/`git` no se encuentran: reiniciar la terminal (PATH recién instalado).
